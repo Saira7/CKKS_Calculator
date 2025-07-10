@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CKKS Calculator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: linear-gradient(120deg, #f8fafc 0%, #e0e7ef 100%);
+            font-family: 'Roboto', Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 2.5em 2em 2em 2em;
+            max-width: 400px;
+            width: 100%;
+            margin: 2em auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+        h1 {
+            font-size: 2em;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1.2em;
+        }
+        label {
+            font-weight: 500;
+            color: #4a5568;
+            margin-bottom: 0.3em;
+        }
+        input, select {
+            width: 100%;
+            padding: 0.7em;
+            margin-bottom: 1.2em;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1em;
+            background: #f1f5f9;
+            transition: border 0.2s;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus {
+            border: 1.5px solid #4299e1;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 0.8em;
+            background: linear-gradient(90deg, #4299e1 0%, #38b2ac 100%);
+            color: #fff;
+            font-size: 1.1em;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(66,153,225,0.08);
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            background: linear-gradient(90deg, #3182ce 0%, #319795 100%);
+            box-shadow: 0 4px 16px rgba(66,153,225,0.12);
+        }
+        .result-card {
+            background: #f1f5f9;
+            border-radius: 10px;
+            margin-top: 1.5em;
+            padding: 1.2em 1em;
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            transition: background 0.2s;
+            word-break: break-word;
+            overflow-wrap: break-word;
+            overflow-x: auto;
+            max-width: 100%;
+        }
+        .result-label {
+            color: #2b6cb0;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+        .result-value {
+            color: #22223b;
+            font-size: 1.1em;
+            margin-top: 0.2em;
+            margin-bottom: 0.5em;
+            word-break: break-word;
+        }
+        .enc-label {
+            color: #718096;
+            font-size: 0.95em;
+            margin-top: 0.7em;
+            word-break: break-all;
+        }
+        code {
+            display: block;
+            background: #e2e8f0;
+            border-radius: 6px;
+            padding: 0.5em;
+            margin-top: 0.3em;
+            font-size: 0.92em;
+            max-width: 100%;
+            overflow-x: auto;
+            word-break: break-all;
+        }
+        .error {
+            color: #e53e3e;
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-radius: 8px;
+            padding: 0.8em 1em;
+            margin-top: 1.2em;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 1.2em 0.5em 1.5em 0.5em;
+                max-width: 98vw;
+            }
+            .result-card {
+                padding: 1em 0.5em;
+                font-size: 0.98em;
+            }
+            code {
+                font-size: 0.85em;
+            }
+        }
+        @media (max-width: 400px) {
+            .container {
+                padding: 0.5em 0.1em 1em 0.1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CKKS Calculator</h1>
+        <form id="calc-form" autocomplete="off">
+            <label for="num1">First number or vector (comma-separated):</label>
+            <input type="text" id="num1" required placeholder="e.g. 1,2,3">
+            <label for="num2">Second number or vector (comma-separated):</label>
+            <input type="text" id="num2" required placeholder="e.g. 4,5,6">
+            <label for="operation">Operation:</label>
+            <select id="operation">
+                <option value="add">Add</option>
+                <option value="multiply">Multiply</option>
+            </select>
+            <button type="submit">Calculate</button>
+        </form>
+        <div id="result-area"></div>
+    </div>
+    <script>
+    const form = document.getElementById('calc-form');
+    const resultArea = document.getElementById('result-area');
+    form.onsubmit = async function(e) {
+        e.preventDefault();
+        resultArea.innerHTML = '<div class="result-card"><span class="result-label">Calculating...</span></div>';
+        const num1 = document.getElementById('num1').value;
+        const num2 = document.getElementById('num2').value;
+        const operation = document.getElementById('operation').value;
+        try {
+            const resp = await fetch('/ckks-calc', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ num1, num2, operation })
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                resultArea.innerHTML = `
+                    <div class="result-card">
+                        <div class="result-label">${data.operation} (CKKS Encrypted)</div>
+                        <div class="result-value"><b>Decrypted result:</b> ${Array.isArray(data.decrypted_result) ? data.decrypted_result.join(', ') : data.decrypted_result}</div>
+                        <div class="result-value"><b>Actual result:</b> ${Array.isArray(data.actual_result) ? data.actual_result.join(', ') : data.actual_result}</div>
+                        <div class="result-value"><b>Precision loss:</b></div>
+                        <div class="result-value">Max abs error = ${data.precision_loss.max_abs_error}</div>
+                        <div class="result-value">Avg abs error = ${data.precision_loss.avg_abs_error}</div>
+                        <div class="enc-label"><b>Encrypted sample:</b><code>${data.encrypted_sample}</code></div>
+                    </div>
+                `;
+            } else {
+                resultArea.innerHTML = `<div class="error">${data.error || 'Error occurred.'}</div>`;
+            }
+        } catch (err) {
+            resultArea.innerHTML = `<div class="error">Network or server error.</div>`;
+        }
+    };
+    </script>
+</body>
+</html> 
